@@ -1,10 +1,14 @@
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const API_BASE = "/api/v1";
+// ── Dynamic API URL based on environment ──────
+// In development: Vite proxy handles /api → localhost:5000
+// In production: Point directly to Vercel backend URL
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 const apiClient = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 60000, // AI calls can take time
 });
@@ -47,7 +51,13 @@ export const proposalAPI = {
 
 // ── Health check ────────────────────────────────
 export const healthAPI = {
-  check: () => axios.get("/api/health"),
+  check: () => {
+    // In production, health endpoint is on different domain
+    const healthUrl = import.meta.env.VITE_API_BASE_URL
+      ? import.meta.env.VITE_API_BASE_URL.replace("/api/v1", "/api/health")
+      : "/api/health";
+    return axios.get(healthUrl);
+  },
 };
 
 export default apiClient;

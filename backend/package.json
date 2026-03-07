@@ -2,9 +2,13 @@
   "name": "sustainable-ai-backend",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "vercel-build": "echo 'Build complete'",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --forceExit"
   },
   "dependencies": {
