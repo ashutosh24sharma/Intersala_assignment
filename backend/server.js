@@ -22,22 +22,26 @@ connectDB();
 
 // ── Security & parsing ───────────────────
 app.use(helmet());
+
+// ── CORS — handle OPTIONS preflight FIRST ───────────────────
+app.options("*", cors());
+
 app.use(
   cors({
     origin: [
-      settings.clientUrl,
-      // Add your Render frontend URL here after deployment
-      "https://your-frontend.onrender.com",
+      "https://intersala-assignment.vercel.app",   // ✅ your actual Vercel URL
       "http://localhost:5173",
+      "http://localhost:3000",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.use(express.json({ limit: "10mb" }));
 
-// Only use morgan in development (Vercel has its own logging)
+// ── Logging (dev only) ───────────────────
 if (settings.nodeEnv !== "production") {
   app.use(morgan("dev"));
 }
@@ -74,14 +78,10 @@ app.use("/api/v1/whatsapp", whatsappRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// ── Start server ONLY when running locally (not on Vercel) ──
-if (settings.nodeEnv !== "production") {
-  app.listen(settings.port, () => {
-    logger.info(
-      `Server running on port ${settings.port} [${settings.nodeEnv}]`
-    );
-  });
-}
+// ── Start server (Render needs this, unlike Vercel) ──────────
+const PORT = process.env.PORT || settings.port || 5000;
+app.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT} [${settings.nodeEnv}]`);
+});
 
-// ── Export for Vercel serverless ───────────
 export default app;
