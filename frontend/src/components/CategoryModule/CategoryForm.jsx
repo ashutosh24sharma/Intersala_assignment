@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { HiOutlineSparkles, HiOutlineBeaker, HiOutlineSearch } from "react-icons/hi";
+import {
+  HiOutlineSparkles,
+  HiOutlineBeaker,
+  HiOutlineSearch,
+  HiOutlineX,
+  HiOutlineRefresh,
+  HiOutlineChevronDown,
+} from "react-icons/hi";
+import { FaLeaf } from "react-icons/fa";
 
 // ── 20 Sample Products ────────────────────────
 const SAMPLES = [
@@ -225,6 +233,15 @@ const SAMPLES = [
   },
 ];
 
+// Group samples by category
+const groupedSamples = SAMPLES.reduce((acc, sample) => {
+  if (!acc[sample.category]) {
+    acc[sample.category] = [];
+  }
+  acc[sample.category].push(sample);
+  return acc;
+}, {});
+
 const initialFormState = {
   productName: "",
   productDescription: "",
@@ -236,6 +253,7 @@ function CategoryForm({ onSubmit, isLoading }) {
   const [form, setForm] = useState(initialFormState);
   const [showSamples, setShowSamples] = useState(false);
   const [sampleSearch, setSampleSearch] = useState("");
+  const [expandedCategory, setExpandedCategory] = useState(null);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -250,6 +268,7 @@ function CategoryForm({ onSubmit, isLoading }) {
     setForm(sample.data);
     setShowSamples(false);
     setSampleSearch("");
+    setExpandedCategory(null);
   };
 
   // Filter samples by search text
@@ -261,83 +280,150 @@ function CategoryForm({ onSubmit, isLoading }) {
       s.data.material?.toLowerCase().includes(sampleSearch.toLowerCase())
   );
 
-  return (
-    <form onSubmit={handleSubmit} className="card">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-800">
-          Product Information
-        </h3>
+  const isFormValid = form.productName.trim() && form.productDescription.length >= 10;
+  const characterCount = form.productDescription.length;
+  const characterPercentage = Math.min((characterCount / 5000) * 100, 100);
 
-        {/* Sample Selector */}
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Header with Sample Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+            <FaLeaf className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-slate-800">
+              Product Details
+            </h3>
+            <p className="text-xs text-slate-500">Fill in the fields below or load a sample</p>
+          </div>
+        </div>
+
+        {/* Sample Selector Button */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowSamples(!showSamples)}
-            className="btn-secondary text-sm py-1.5 flex items-center gap-2"
+            className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-emerald-50 hover:to-teal-50 text-slate-700 hover:text-emerald-700 text-sm font-medium rounded-xl border border-slate-200 hover:border-emerald-200 transition-all duration-300 shadow-sm hover:shadow-md"
           >
-            <HiOutlineBeaker className="w-4 h-4" />
-            Load Sample ({SAMPLES.length})
+            <HiOutlineBeaker className="w-4 h-4 group-hover:text-emerald-600 transition-colors" />
+            <span>Load Sample</span>
+            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full shadow-sm">
+              {SAMPLES.length}
+            </span>
+            <HiOutlineChevronDown className={`w-4 h-4 transition-transform duration-300 ${showSamples ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* Dropdown */}
+          {/* Sample Dropdown */}
           {showSamples && (
             <>
               <div
-                className="fixed inset-0 z-10"
+                className="fixed inset-0 z-10 bg-black/10 backdrop-blur-sm"
                 onClick={() => {
                   setShowSamples(false);
                   setSampleSearch("");
+                  setExpandedCategory(null);
                 }}
               />
-              <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-20 overflow-hidden">
+              <div className="absolute right-0 sm:right-0 left-0 sm:left-auto mt-2 w-full sm:w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 z-20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 {/* Header with search */}
-                <div className="p-3 bg-gray-50 border-b border-gray-200">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                    Choose a sample product ({filteredSamples.length} of{" "}
-                    {SAMPLES.length})
-                  </p>
+                <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-b border-emerald-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                        <HiOutlineBeaker className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">
+                          Sample Products
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {filteredSamples.length} of {SAMPLES.length} available
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSamples(false);
+                        setSampleSearch("");
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-white/60 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      <HiOutlineX className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
                   <div className="relative">
-                    <HiOutlineSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <HiOutlineSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                     <input
                       type="text"
-                      placeholder="Search samples..."
+                      placeholder="Search by name, category, or material..."
                       value={sampleSearch}
                       onChange={(e) => setSampleSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg 
-                                 focus:border-primary-500 focus:ring-1 focus:ring-primary-200 outline-none"
+                      className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl 
+                                 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none transition-all placeholder:text-slate-400"
                     />
                   </div>
                 </div>
 
                 {/* Sample list */}
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-[400px] overflow-y-auto">
                   {filteredSamples.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-sm text-gray-400">
-                      No samples match your search.
+                    <div className="px-6 py-12 text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+                        <HiOutlineSearch className="w-8 h-8 text-slate-300" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-600">No samples found</p>
+                      <p className="text-xs text-slate-400 mt-1">Try a different search term</p>
                     </div>
                   ) : (
-                    filteredSamples.map((sample, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => loadSample(sample)}
-                        className="w-full text-left px-4 py-3 hover:bg-primary-50 
-                                   transition-colors border-b border-gray-100 last:border-0"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-gray-800 text-sm">
-                            {sample.label}
-                          </p>
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2 flex-shrink-0">
-                            {sample.category}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1 truncate">
-                          {sample.data.material || "Various materials"}
-                        </p>
-                      </button>
-                    ))
+                    <div className="p-2">
+                      {filteredSamples.map((sample, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => loadSample(sample)}
+                          className="w-full text-left p-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 
+                                     transition-all duration-200 group mb-1 last:mb-0 border border-transparent hover:border-emerald-200"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 group-hover:from-emerald-100 group-hover:to-teal-100 flex items-center justify-center text-lg transition-colors">
+                              {sample.label.split(' ')[0]}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-medium text-slate-800 group-hover:text-emerald-700 text-sm truncate transition-colors">
+                                  {sample.label.split(' ').slice(1).join(' ')}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200 transition-colors">
+                                  {sample.category}
+                                </span>
+                                <p className="text-xs text-slate-400 truncate">
+                                  {sample.data.material || "Various materials"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded-lg">
+                                Load
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   )}
+                </div>
+
+                {/* Footer */}
+                <div className="p-3 bg-slate-50 border-t border-slate-100">
+                  <p className="text-xs text-center text-slate-400">
+                    Click on any sample to auto-fill the form
+                  </p>
                 </div>
               </div>
             </>
@@ -345,52 +431,95 @@ function CategoryForm({ onSubmit, isLoading }) {
         </div>
       </div>
 
-      <div className="space-y-4">
+      {/* Form Fields */}
+      <div className="space-y-5">
         {/* Product Name */}
-        <div>
-          <label htmlFor="productName" className="label">
-            Product Name <span className="text-red-500">*</span>
+        <div className="group">
+          <label htmlFor="productName" className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Product Name
+            <span className="text-red-500">*</span>
           </label>
-          <input
-            id="productName"
-            name="productName"
-            type="text"
-            value={form.productName}
-            onChange={handleChange}
-            placeholder="e.g. Bamboo Toothbrush"
-            className="input-field"
-            required
-            minLength={2}
-            maxLength={255}
-          />
+          <div className="relative">
+            <input
+              id="productName"
+              name="productName"
+              type="text"
+              value={form.productName}
+              onChange={handleChange}
+              placeholder="e.g. Bamboo Toothbrush"
+              className="w-full px-4 py-3 text-sm sm:text-base bg-white border-2 border-slate-200 rounded-xl 
+                         focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition-all
+                         placeholder:text-slate-400 hover:border-slate-300"
+              required
+              minLength={2}
+              maxLength={255}
+            />
+            {form.productName && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-600">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Product Description */}
-        <div>
-          <label htmlFor="productDescription" className="label">
-            Product Description <span className="text-red-500">*</span>
+        <div className="group">
+          <label htmlFor="productDescription" className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Product Description
+            <span className="text-red-500">*</span>
           </label>
-          <textarea
-            id="productDescription"
-            name="productDescription"
-            value={form.productDescription}
-            onChange={handleChange}
-            placeholder="Detailed description of the product including materials, features, and sustainability attributes..."
-            className="input-field min-h-[120px] resize-y"
-            required
-            minLength={10}
-            maxLength={5000}
-          />
-          <p className="text-xs text-gray-400 mt-1">
-            {form.productDescription.length}/5000 characters
-          </p>
+          <div className="relative">
+            <textarea
+              id="productDescription"
+              name="productDescription"
+              value={form.productDescription}
+              onChange={handleChange}
+              placeholder="Detailed description of the product including materials, features, and sustainability attributes..."
+              className="w-full px-4 py-3 text-sm sm:text-base bg-white border-2 border-slate-200 rounded-xl 
+                         focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition-all
+                         placeholder:text-slate-400 hover:border-slate-300 min-h-[140px] sm:min-h-[160px] resize-y"
+              required
+              minLength={10}
+              maxLength={5000}
+            />
+          </div>
+          
+          {/* Character counter with progress bar */}
+          <div className="mt-2 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className={`font-medium ${characterCount >= 10 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {characterCount >= 10 ? '✓ Minimum reached' : `${10 - characterCount} more characters needed`}
+              </span>
+              <span className="text-slate-400">
+                {characterCount.toLocaleString()}/5,000
+              </span>
+            </div>
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-300 ${
+                  characterCount >= 10 
+                    ? 'bg-gradient-to-r from-emerald-400 to-teal-500' 
+                    : 'bg-slate-300'
+                }`}
+                style={{ width: `${characterPercentage}%` }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Material & Brand Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="material" className="label">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <div className="group">
+            <label htmlFor="material" className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
               Material(s)
+              <span className="text-xs text-slate-400 font-normal">(optional)</span>
             </label>
             <input
               id="material"
@@ -399,12 +528,16 @@ function CategoryForm({ onSubmit, isLoading }) {
               value={form.material}
               onChange={handleChange}
               placeholder="e.g. bamboo, organic cotton"
-              className="input-field"
+              className="w-full px-4 py-3 text-sm sm:text-base bg-white border-2 border-slate-200 rounded-xl 
+                         focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition-all
+                         placeholder:text-slate-400 hover:border-slate-300"
             />
           </div>
-          <div>
-            <label htmlFor="brand" className="label">
+          <div className="group">
+            <label htmlFor="brand" className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
               Brand
+              <span className="text-xs text-slate-400 font-normal">(optional)</span>
             </label>
             <input
               id="brand"
@@ -413,34 +546,63 @@ function CategoryForm({ onSubmit, isLoading }) {
               value={form.brand}
               onChange={handleChange}
               placeholder="e.g. EcoSmile"
-              className="input-field"
+              className="w-full px-4 py-3 text-sm sm:text-base bg-white border-2 border-slate-200 rounded-xl 
+                         focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition-all
+                         placeholder:text-slate-400 hover:border-slate-300"
             />
           </div>
         </div>
       </div>
 
-      {/* Submit */}
-      <div className="mt-6 flex items-center gap-4">
+      {/* Form Actions */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 border-t border-slate-100">
         <button
           type="submit"
-          disabled={
-            isLoading ||
-            !form.productName.trim() ||
-            form.productDescription.length < 10
-          }
-          className="btn-primary flex items-center gap-2"
+          disabled={isLoading || !isFormValid}
+          className={`relative flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg
+            ${isFormValid && !isLoading
+              ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+            }`}
         >
-          <HiOutlineSparkles className="w-5 h-5" />
-          {isLoading ? "Analyzing..." : "Generate Categories & Tags"}
+          {isLoading ? (
+            <>
+              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>Analyzing...</span>
+            </>
+          ) : (
+            <>
+              <HiOutlineSparkles className="w-5 h-5" />
+              <span>Generate Categories & Tags</span>
+            </>
+          )}
         </button>
+        
         <button
           type="button"
           onClick={() => setForm(initialFormState)}
-          className="btn-secondary"
+          disabled={isLoading}
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Clear
+          <HiOutlineRefresh className="w-4 h-4" />
+          <span>Clear Form</span>
         </button>
       </div>
+
+      {/* Validation helper text */}
+      {!isFormValid && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-amber-700">
+            Please fill in the <strong>product name</strong> and provide at least <strong>10 characters</strong> of description to continue.
+          </p>
+        </div>
+      )}
     </form>
   );
 }
